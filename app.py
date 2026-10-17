@@ -9,6 +9,40 @@ import shutil
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
 from pathlib import Path
+from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+import anthropic, subprocess, os, json, traceback, sys, time, re
+from datetime import datetime
+from pathlib import Path
+import requests as req_lib
+from exa_py import Exa
+from firecrawl import FirecrawlApp
+
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+client     = anthropic.Anthropic(
+    api_key  = os.environ["ANTHROPIC_API_KEY"],
+    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+)
+exa        = Exa(api_key=os.environ["EXA_API_KEY"])
+firecrawl  = FirecrawlApp(api_key=os.environ["FIRECRAWL_API_KEY"])
+BASE_DIR   = Path(__file__).parent
+WORKSPACE  = BASE_DIR / "workspace"
+HISTORY_F  = BASE_DIR / "history.json"
+WORKSPACE.mkdir(exist_ok=True)
+
+SYSTEM = (BASE_DIR / "CLAUDE.md").read_text(encoding="utf-8")
+
+TOOLS AVAILABLE:
+- run_shell: bash commands, install binaries (gobuster/ffuf/nuclei/sqlmap/etc), wget/curl downloads
+- run_python: execute Python code, data analysis, scripting
+- write_file: write any file to workspace (code, reports, configs)
+- read_file: read workspace files
+- list_workspace: list all files with sizes
+- web_search: Exa neural search - researching targets, CVEs, exploits, tools
+- web_fetch: Firecrawl - fetch any URL, JS-rendered pages, docs
+- search_history: search past conversation history
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
